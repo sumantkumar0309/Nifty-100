@@ -1,0 +1,25 @@
+{% extends 'app/base.html' %}
+
+{% block title %}About{% endblock %}
+
+{% block content %}
+<div class="bg-white p-4 rounded shadow">
+	<h1 class="text-3xl font-bold mb-2">About Market AI</h1>
+	<p class="text-sm text-gray-500">Nifty 100 Financial Intelligence Platform</p>
+
+	<div class="mt-6 grid grid-cols-3 gap-4">
+		<div class="bg-gray-100 p-3 rounded">
+			<div class="font-bold">Analytics</div>
+			<div class="text-sm text-gray-500">Power BI dashboards + KPI drilldowns</div>
+		</div>
+		<div class="bg-gray-100 p-3 rounded">
+			<div class="font-bold">Data Engineering</div>
+			<div class="text-sm text-gray-500">ETL pipelines and PostgreSQL star schema</div>
+		</div>
+		<div class="bg-gray-100 p-3 rounded">
+			<div class="font-bold">Web Platform</div>
+			<div class="text-sm text-gray-500">Django UI with API-ready integration</div>
+		</div>
+	</div>
+</div>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends 'app/base.html' %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="bg-white p-4 rounded shadow mb-4">
+	<h2 class="font-bold mb-2">Sector Performance Report</h2>
+	<p class="text-sm text-gray-500 mb-4">Computed from latest available year and ML health scores.</p>
+
+	<div id="reportsError" class="hidden text-sm text-red-600 mb-3">
+		Failed to load report data.
+	</div>
+
+	<table class="w-full text-left">
+		<thead class="bg-gray-100">
+			<tr>
+				<th class="p-3">Sector</th>
+				<th class="p-3">Companies</th>
+				<th class="p-3">Total Revenue</th>
+				<th class="p-3">Total Profit</th>
+				<th class="p-3">Avg Health</th>
+			</tr>
+		</thead>
+		<tbody id="reportsTableBody">
+			<tr class="animate-pulse"><td class="p-3" colspan="5"><div class="h-4 bg-gray-100 rounded"></div></td></tr>
+			<tr class="animate-pulse"><td class="p-3" colspan="5"><div class="h-4 bg-gray-100 rounded"></div></td></tr>
+			<tr class="animate-pulse"><td class="p-3" colspan="5"><div class="h-4 bg-gray-100 rounded"></div></td></tr>
+		</tbody>
+	</table>
+</div>
+
+<div class="bg-white p-4 rounded shadow">
+	<h2 class="font-bold mb-2">Sector Revenue vs Profit</h2>
+	<div id="reportsChartError" class="hidden text-sm text-red-600 mb-3">Chart unavailable.</div>
+	<div id="reportsChartLoading" class="space-y-2">
+		<div class="h-3 bg-gray-200 rounded animate-pulse"></div>
+		<div class="h-32 bg-gray-100 rounded animate-pulse"></div>
+	</div>
+	<canvas id="sectorChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const reportsTableBody = document.getElementById('reportsTableBody');
+const reportsError = document.getElementById('reportsError');
+const reportsChartError = document.getElementById('reportsChartError');
+const reportsChartLoading = document.getElementById('reportsChartLoading');
+
+async function loadReports() {
+	try {
+		const response = await fetch('/api/reports/sector/');
+		if (!response.ok) {
+			throw new Error('Unable to fetch sector report');
+		}
+
+		const payload = await response.json();
+		const rows = payload.rows || [];
+
+		if (!rows.length) {
+			reportsTableBody.innerHTML = '<tr><td class="p-3 text-gray-500" colspan="5">No report data available.</td></tr>';
+		} else {
+			reportsTableBody.innerHTML = rows.map(row => `
+				<tr class="border-b hover:bg-gray-50">
+					<td class="p-3 font-bold">${row.sector}</td>
+					<td class="p-3">${row.company_count}</td>
+					<td class="p-3">₹ ${Number(row.total_revenue).toLocaleString()}</td>
+					<td class="p-3">₹ ${Number(row.total_profit).toLocaleString()}</td>
+					<td class="p-3">${Number(row.avg_health).toFixed(1)}</td>
+				</tr>
+			`).join('');
+		}
+
+		reportsChartLoading.remove();
+
+		if (typeof Chart === 'undefined') {
+			reportsChartError.textContent = 'Chart.js CDN failed to load.';
+			reportsChartError.classList.remove('hidden');
+			return;
+		}
+
+		new Chart(document.getElementById('sectorChart'), {
+			type: 'bar',
+			data: {
+				labels: payload.labels || [],
+				datasets: [
+					{
+						label: 'Revenue',
+						data: payload.revenue || [],
+						backgroundColor: '#93c5fd',
+					},
+					{
+						label: 'Profit',
+						data: payload.profit || [],
+						backgroundColor: '#86efac',
+					}
+				]
+			}
+		});
+	} catch (error) {
+		reportsError.classList.remove('hidden');
+		reportsChartLoading.remove();
+		reportsChartError.classList.remove('hidden');
+		reportsTableBody.innerHTML = '<tr><td class="p-3 text-gray-500" colspan="5">No report data available.</td></tr>';
+		console.error(error);
+	}
+}
+
+loadReports();
+</script>
+{% endblock %}
