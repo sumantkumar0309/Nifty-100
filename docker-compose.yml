@@ -1,0 +1,90 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: nifty100-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nifty100
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      TZ: Asia/Kolkata
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d nifty100"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: nifty100-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  backend2-worker:
+    image: python:3.11-slim
+    container_name: nifty100-backend2-worker
+    restart: unless-stopped
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+    env_file:
+      - ./marketAI/backend/.env.backend2.example
+    environment:
+      PYTHONPATH: /workspace:/workspace/marketAI/backend
+      PYTHON_EXECUTABLE: python
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command:
+      - /bin/sh
+      - -c
+      - |
+        pip install --no-cache-dir -r /workspace/requirements.txt
+        pip install --no-cache-dir -r /workspace/marketAI/backend/requirements-backend2.txt
+        python -m celery -A backend2.celery_app:celery_app worker --loglevel=INFO
+
+  backend2-beat:
+    image: python:3.11-slim
+    container_name: nifty100-backend2-beat
+    restart: unless-stopped
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+    env_file:
+      - ./marketAI/backend/.env.backend2.example
+    environment:
+      PYTHONPATH: /workspace:/workspace/marketAI/backend
+      PYTHON_EXECUTABLE: python
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend2-worker:
+        condition: service_started
+    command:
+      - /bin/sh
+      - -c
+      - |
+        pip install --no-cache-dir -r /workspace/requirements.txt
+        pip install --no-cache-dir -r /workspace/marketAI/backend/requirements-backend2.txt
+        python -m celery -A backend2.celery_app:celery_app beat --loglevel=INFO
+
+volumes:
+  pgdata:
+  redisdata:
