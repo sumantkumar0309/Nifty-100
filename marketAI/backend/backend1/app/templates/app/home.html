@@ -1,0 +1,94 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Market Intelligence{% endblock %}
+
+{% block content %}
+
+<div class="bg-black text-white p-8 rounded-lg">
+    <h1 class="text-3xl font-bold">Nifty 100 Market Intelligence</h1>
+    <p class="text-gray-300 mt-2">Financial analytics & ML insights platform</p>
+</div>
+
+<div id="homeError" class="hidden text-sm text-red-600 bg-white p-3 rounded shadow mt-4">
+    Failed to load summary cards.
+</div>
+
+<div class="grid grid-cols-3 gap-4 mt-6">
+
+    <div class="bg-white p-4 rounded shadow">
+        <div class="text-sm text-gray-500">Total Companies</div>
+        <div id="totalCompanies" class="text-2xl font-bold">Loading...</div>
+    </div>
+
+    <div class="bg-white p-4 rounded shadow">
+        <div class="text-sm text-gray-500">Avg Health Score</div>
+        <div id="avgHealthScore" class="text-2xl font-bold">Loading...</div>
+    </div>
+
+    <div class="bg-white p-4 rounded shadow">
+        <div class="text-sm text-gray-500">Top Sector</div>
+        <div id="topSector" class="text-2xl font-bold">Loading...</div>
+    </div>
+
+</div>
+
+<div class="bg-white p-4 rounded shadow mt-6">
+    <h2 class="font-bold mb-2">Top Health Leaders</h2>
+
+    <div id="leadersLoading" class="space-y-2">
+        <div class="h-4 bg-gray-100 rounded animate-pulse"></div>
+        <div class="h-4 bg-gray-100 rounded animate-pulse"></div>
+        <div class="h-4 bg-gray-100 rounded animate-pulse"></div>
+    </div>
+
+    <div id="leadersList" class="hidden"></div>
+</div>
+
+<script>
+const homeError = document.getElementById('homeError');
+const totalCompaniesEl = document.getElementById('totalCompanies');
+const avgHealthScoreEl = document.getElementById('avgHealthScore');
+const topSectorEl = document.getElementById('topSector');
+const leadersLoading = document.getElementById('leadersLoading');
+const leadersList = document.getElementById('leadersList');
+
+async function loadHomeSummary() {
+    try {
+        const response = await fetch('/api/summary/');
+        if (!response.ok) {
+            throw new Error('Unable to fetch summary data');
+        }
+
+        const payload = await response.json();
+        totalCompaniesEl.textContent = payload.total_companies;
+        avgHealthScoreEl.textContent = payload.avg_health_score;
+        topSectorEl.textContent = payload.top_sector;
+
+        leadersLoading.classList.add('hidden');
+        leadersList.classList.remove('hidden');
+
+        const leaders = payload.top_companies || [];
+        if (!leaders.length) {
+            leadersList.innerHTML = '<div class="text-sm text-gray-500">No leaders available.</div>';
+            return;
+        }
+
+        leadersList.innerHTML = leaders.map((company, index) => `
+            <div class="p-2 border-b">
+                <div class="font-bold">${index + 1}. ${company.name}</div>
+                <div class="text-sm text-gray-500">${company.sector} | Health: ${Number(company.health).toFixed(1)}</div>
+            </div>
+        `).join('');
+    } catch (error) {
+        homeError.classList.remove('hidden');
+        leadersLoading.classList.add('hidden');
+        leadersList.classList.remove('hidden');
+        leadersList.innerHTML = '<div class="text-sm text-gray-500">Unable to load leaders.</div>';
+        console.error(error);
+    }
+}
+
+loadHomeSummary();
+</script>
+
+{% endblock %}
