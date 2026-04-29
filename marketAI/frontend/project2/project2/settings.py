@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
+    'rest_framework',
     'app',   # ✅ add this
 ]
 
@@ -76,14 +76,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'project2.wsgi.application'
 
 
+import environ
+
+env = environ.Env()
+environ.Env.read_env(BASE_DIR / '.env')
+
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': env.db('DATABASE_URL', default='postgresql://postgres:postgres@localhost:5432/nifty100')
 }
 
 
