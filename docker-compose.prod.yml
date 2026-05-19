@@ -1,0 +1,218 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Data Warehouse
+  postgres:
+    image: postgres:15-alpine
+    container_name: nifty100_postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-nifty100}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password}
+      POSTGRES_DB: ${DB_NAME:-nifty100_warehouse}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/warehouse_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    networks:
+      - nifty100_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-nifty100}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis Cache & Message Broker
+  redis:
+    image: redis:7-alpine
+    container_name: nifty100_redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_secure_pass}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - nifty100_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_secure_pass}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Django Application (Gunicorn WSGI Server)
+  django:
+    build:
+      context: ./marketAI/backend
+      dockerfile: Dockerfile
+    container_name: nifty100_django
+    command: gunicorn backend2.wsgi:application --bind 0.0.0.0:8000 --workers 4 --worker-class sync --timeout 120 --access-logfile - --error-logfile -
+    environment:
+      DEBUG: ${DEBUG:-false}
+      DJANGO_SETTINGS_MODULE: backend2.settings
+      SECRET_KEY: ${DJANGO_SECRET_KEY:-your-secret-key-change-in-production}
+      DATABASE_URL: postgresql://${DB_USER:-nifty100}:${DB_PASSWORD:-secure_password}@postgres:5432/${DB_NAME:-nifty100_warehouse}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secure_pass}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-redis_secure_pass}@redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-redis_secure_pass}@redis:6379/2
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+    ports:
+      - "${DJANGO_PORT:-8000}:8000"
+    volumes:
+      - ./marketAI:/app
+      - django_static:/app/staticfiles
+      - django_media:/app/media
+    networks:
+      - nifty100_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # Celery Worker (Background Task Processing)
+  celery_worker:
+    build:
+      context: ./marketAI/backend
+      dockerfile: Dockerfile
+    container_name: nifty100_celery_worker
+    command: celery -A backend2 worker -l info --concurrency=4 --max-tasks-per-child=1000 --time-limit=3600
+    environment:
+      DEBUG: ${DEBUG:-false}
+      DJANGO_SETTINGS_MODULE: backend2.settings
+      SECRET_KEY: ${DJANGO_SECRET_KEY:-your-secret-key-change-in-production}
+      DATABASE_URL: postgresql://${DB_USER:-nifty100}:${DB_PASSWORD:-secure_password}@postgres:5432/${DB_NAME:-nifty100_warehouse}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secure_pass}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-redis_secure_pass}@redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-redis_secure_pass}@redis:6379/2
+      CELERY_TIMEZONE: ${CELERY_TIMEZONE:-Asia/Kolkata}
+      ETL_IMPORT_MODULE: etl.00_import_marketai_data
+      ETL_EXTRACT_SQL_MODULE: etl.01_extract_from_mysql
+      ETL_TRANSFORM_MODULE: etl.02_clean_and_transform
+      ETL_LOAD_MODULE: etl.03_load_to_warehouse
+      ML_REFRESH_MODULE: etl.04_generate_ml_scores
+    volumes:
+      - ./marketAI:/app
+      - ./etl:/app/etl
+      - celery_logs:/app/logs
+    networks:
+      - nifty100_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      django:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # Celery Beat (Scheduled Task Scheduler)
+  celery_beat:
+    build:
+      context: ./marketAI/backend
+      dockerfile: Dockerfile
+    container_name: nifty100_celery_beat
+    command: celery -A backend2 beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    environment:
+      DEBUG: ${DEBUG:-false}
+      DJANGO_SETTINGS_MODULE: backend2.settings
+      SECRET_KEY: ${DJANGO_SECRET_KEY:-your-secret-key-change-in-production}
+      DATABASE_URL: postgresql://${DB_USER:-nifty100}:${DB_PASSWORD:-secure_password}@postgres:5432/${DB_NAME:-nifty100_warehouse}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secure_pass}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-redis_secure_pass}@redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-redis_secure_pass}@redis:6379/2
+      CELERY_TIMEZONE: ${CELERY_TIMEZONE:-Asia/Kolkata}
+    volumes:
+      - ./marketAI:/app
+    networks:
+      - nifty100_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      django:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Nginx Reverse Proxy (Production Load Balancer)
+  nginx:
+    image: nginx:alpine
+    container_name: nifty100_nginx
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./docker/ssl:/etc/nginx/ssl:ro
+      - django_static:/app/staticfiles:ro
+      - django_media:/app/media:ro
+      - nginx_logs:/var/log/nginx
+    networks:
+      - nifty100_network
+    depends_on:
+      - django
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+networks:
+  nifty100_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  django_static:
+    driver: local
+  django_media:
+    driver: local
+  celery_logs:
+    driver: local
+  nginx_logs:
+    driver: local

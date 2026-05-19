@@ -151,3 +151,153 @@ def etl_full_refresh_task(self, source_mode: str = "marketai") -> dict[str, Any]
     }
     logger.info("ETL workflow started", extra={"event": "etl_workflow_started", "extra_data": payload})
     return payload
+
+
+@celery_app.task(
+    bind=True,
+    name="backend2.tasks.run_etl_pipeline_task",
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_kwargs={"max_retries": 3},
+)
+def run_etl_pipeline_task(self) -> dict[str, Any]:
+    """
+    Daily 1:00 AM — Run ETL scripts 2 and 3 (clean, transform, and load to warehouse).
+    """
+    workflow = chain(
+        etl_transform_task.s(),
+        etl_load_task.s(),
+        invalidate_cache_task.s(patterns=["company_profile:*", "financial_trend:*"]),
+    )
+    async_result = workflow.apply_async()
+
+    payload = {
+        "stage_name": "run_etl_pipeline",
+        "workflow_id": async_result.id,
+        "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    }
+    logger.info("ETL pipeline task started", extra={"event": "etl_pipeline_started", "extra_data": payload})
+    return payload
+
+
+@celery_app.task(
+    bind=True,
+    name="backend2.tasks.score_all_companies_task",
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_kwargs={"max_retries": 3},
+)
+def score_all_companies_task(self, previous_result: dict | None = None) -> dict[str, Any]:
+    """
+    Daily 2:00 AM — Recalculate health scores for all 100 companies.
+    Runs ML scoring module to compute overall_score, profitability, growth, leverage, cashflow, dividend scores.
+    """
+    result = _run_etl_stage(ML_REFRESH_MODULE, "score_all_companies")
+    
+    payload = {
+        "stage_name": "score_all_companies",
+        "previous_result": previous_result,
+        "ml_result": result,
+        "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    }
+    logger.info("Company scoring completed", extra={"event": "companies_scored", "extra_data": payload})
+    return payload
+
+
+@celery_app.task(
+    bind=True,
+    name="backend2.tasks.generate_pros_cons_task",
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_kwargs={"max_retries": 3},
+)
+def generate_pros_cons_task(self, previous_result: dict | None = None) -> dict[str, Any]:
+    """
+    Daily 2:30 AM — Re-run pros/cons rule engine for all companies.
+    Uses fact_ml_scores and fact tables to generate pro/con statements based on financial metrics.
+    """
+    try:
+        from etl.proscons_generator import generate_all_pros_cons
+        
+        result = generate_all_pros_cons()
+        
+        payload = {
+            "stage_name": "generate_pros_cons",
+            "companies_processed": result.get("count", 0),
+            "pros_generated": result.get("pros_count", 0),
+            "cons_generated": result.get("cons_count", 0),
+            "previous_result": previous_result,
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        }
+        logger.info("Pros/cons generation completed", extra={"event": "pros_cons_generated", "extra_data": payload})
+        return payload
+    except Exception as e:
+        logger.error(f"Pros/cons generation failed: {str(e)}", extra={"event": "pros_cons_failed"})
+        raise
+
+
+@celery_app.task(
+    bind=True,
+    name="backend2.tasks.detect_anomalies_task",
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_kwargs={"max_retries": 3},
+)
+def detect_anomalies_task(self) -> dict[str, Any]:
+    """
+    Weekly Sunday 3:00 AM — Z-score anomaly detection across all fact tables.
+    Detects unusual financial patterns in: sales, net_profit, borrowings, operating_profit across years per company.
+    Also applies Isolation Forest for comparison.
+    """
+    try:
+        from etl.anomaly_detector import detect_anomalies_zscore, detect_anomalies_isolation_forest
+        
+        zscore_results = detect_anomalies_zscore()
+        isolation_results = detect_anomalies_isolation_forest()
+        
+        payload = {
+            "stage_name": "detect_anomalies",
+            "zscore_anomalies_found": zscore_results.get("count", 0),
+            "isolation_anomalies_found": isolation_results.get("count", 0),
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        }
+        logger.info("Anomaly detection completed", extra={"event": "anomalies_detected", "extra_data": payload})
+        return payload
+    except Exception as e:
+        logger.error(f"Anomaly detection failed: {str(e)}", extra={"event": "anomaly_detection_failed"})
+        raise
+
+
+@celery_app.task(
+    bind=True,
+    name="backend2.tasks.detect_trends_task",
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_kwargs={"max_retries": 3},
+)
+def detect_trends_task(self) -> dict[str, Any]:
+    """
+    Weekly Sunday 4:00 AM — Linear regression trend analysis for all companies.
+    Classifies trend as UP/FLAT/DOWN based on 5-year historical data.
+    For top 20 companies, fits ARIMA/Holt-Winters for revenue forecasting.
+    """
+    try:
+        from etl.trend_analyzer import analyze_trends, forecast_top_companies
+        
+        trends = analyze_trends()
+        forecasts = forecast_top_companies()
+        
+        payload = {
+            "stage_name": "detect_trends",
+            "companies_analyzed": trends.get("count", 0),
+            "up_trend": trends.get("up_count", 0),
+            "flat_trend": trends.get("flat_count", 0),
+            "down_trend": trends.get("down_count", 0),
+            "top_20_forecasted": forecasts.get("count", 0),
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        }
+        logger.info("Trend detection completed", extra={"event": "trends_detected", "extra_data": payload})
+        return payload
+    except Exception as e:
+        logger.error(f"Trend detection failed: {str(e)}", extra={"event": "trend_detection_failed"})
+        raise

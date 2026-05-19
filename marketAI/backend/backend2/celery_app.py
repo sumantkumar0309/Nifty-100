@@ -27,19 +27,25 @@ celery_app.conf.update(
 )
 
 celery_app.conf.beat_schedule = {
-    "etl-daily-refresh": {
-        "task": "backend2.tasks.etl_full_refresh_task",
-        "schedule": crontab(hour=CELERY_BEAT_CRON["etl_daily_hour"], minute=CELERY_BEAT_CRON["etl_daily_minute"]),
-        "args": ("marketai",),
+    "run-etl-pipeline-daily": {
+        "task": "backend2.tasks.run_etl_pipeline_task",
+        "schedule": crontab(hour=1, minute=0),
     },
-    "etl-weekly-full-quality-run": {
-        "task": "backend2.tasks.etl_full_refresh_task",
-        "schedule": crontab(
-            day_of_week=CELERY_BEAT_CRON["etl_weekly_day_of_week"],
-            hour=CELERY_BEAT_CRON["etl_weekly_hour"],
-            minute=CELERY_BEAT_CRON["etl_weekly_minute"],
-        ),
-        "args": ("marketai",),
+    "score-all-companies-daily": {
+        "task": "backend2.tasks.score_all_companies_task",
+        "schedule": crontab(hour=2, minute=0),
+    },
+    "generate-pros-cons-daily": {
+        "task": "backend2.tasks.generate_pros_cons_task",
+        "schedule": crontab(hour=2, minute=30),
+    },
+    "detect-anomalies-weekly": {
+        "task": "backend2.tasks.detect_anomalies_task",
+        "schedule": crontab(day_of_week="sun", hour=3, minute=0),
+    },
+    "detect-trends-weekly": {
+        "task": "backend2.tasks.detect_trends_task",
+        "schedule": crontab(day_of_week="sun", hour=4, minute=0),
     },
     "backend2-system-health-ping": {
         "task": "backend2.tasks.system_health_task",

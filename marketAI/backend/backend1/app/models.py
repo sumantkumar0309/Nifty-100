@@ -17,8 +17,7 @@ class DimCompany(models.Model):
         db_table = 'dim_company'
 
 class FactProfitLoss(models.Model):
-    id = models.AutoField(primary_key=True)
-    symbol = models.ForeignKey(DimCompany, on_delete=models.CASCADE, db_column='symbol')
+    symbol = models.ForeignKey(DimCompany, on_delete=models.CASCADE, db_column='symbol', primary_key=True)
     year_id = models.IntegerField()
     sales = models.DecimalField(max_digits=20, decimal_places=4, null=True, blank=True)
     expenses = models.DecimalField(max_digits=20, decimal_places=4, null=True, blank=True)
@@ -42,8 +41,7 @@ class FactProfitLoss(models.Model):
         db_table = 'fact_profit_loss'
 
 class MlScore(models.Model):
-    id = models.AutoField(primary_key=True)
-    symbol = models.ForeignKey(DimCompany, on_delete=models.CASCADE, db_column='symbol')
+    symbol = models.ForeignKey(DimCompany, on_delete=models.CASCADE, db_column='symbol', primary_key=True)
     company_name = models.CharField(max_length=255, null=True, blank=True)
     sector_name = models.CharField(max_length=255, null=True, blank=True)
     computed_at = models.DateTimeField()
@@ -57,5 +55,6 @@ class MlScore(models.Model):
     health_label = models.CharField(max_length=50, null=True, blank=True)
 
     class Meta:
-        db_table = 'ml_scores'
+        db_table = 'fact_ml_scores'
+
 
