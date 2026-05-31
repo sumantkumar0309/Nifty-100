@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ page_title }}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap');
+
+        :root {
+            --bg-a: #f4efe4;
+            --bg-b: #dce8f2;
+            --ink: #1a2630;
+            --muted: #4e5f6f;
+            --card: rgba(255, 255, 255, 0.86);
+            --line: #d4dce5;
+            --accent: #0f766e;
+            --accent-2: #dc6803;
+            --good: #16a34a;
+            --warn: #ca8a04;
+            --bad: #dc2626;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            color: var(--ink);
+            font-family: "Manrope", "Segoe UI", sans-serif;
+            background:
+                radial-gradient(circle at 0% 0%, #d3eadf 0%, transparent 45%),
+                radial-gradient(circle at 100% 100%, #f9dcc8 0%, transparent 42%),
+                linear-gradient(145deg, var(--bg-a), var(--bg-b));
+            min-height: 100vh;
+        }
+
+        .layout {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 16px;
+            backdrop-filter: blur(6px);
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .brand strong {
+            font-size: 1.05rem;
+            letter-spacing: 0.02em;
+        }
+
+        .brand span {
+            font-size: 0.82rem;
+            color: var(--muted);
+        }
+
+        .topnav {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .topnav a {
+            text-decoration: none;
+            color: var(--ink);
+            border: 1px solid var(--line);
+            padding: 8px 10px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            background: #fff;
+        }
+
+        .hero {
+            margin-top: 18px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 24px rgba(19, 37, 52, 0.08);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(1.4rem, 2.2vw, 2.1rem);
+            letter-spacing: 0.01em;
+        }
+
+        .subtitle {
+            margin-top: 8px;
+            color: var(--muted);
+            max-width: 760px;
+        }
+
+        .grid {
+            display: grid;
+            gap: 14px;
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        }
+
+        .card {
+            border: 1px solid var(--line);
+            background: #fff;
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .kpi {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin: 2px 0;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .toolbar {
+            margin-top: 16px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .toolbar input,
+        .toolbar select,
+        .toolbar button {
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font: inherit;
+            background: #fff;
+        }
+
+        .toolbar button {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin-top: 14px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: #fff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #eef1f5;
+            text-align: left;
+            font-size: 0.88rem;
+            white-space: nowrap;
+        }
+
+        th {
+            color: #30414f;
+            background: #f8fafc;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            color: #fff;
+        }
+
+        .badge.EXCELLENT,
+        .badge.GOOD {
+            background: var(--good);
+        }
+
+        .badge.AVERAGE {
+            background: var(--warn);
+        }
+
+        .badge.WEAK,
+        .badge.POOR {
+            background: var(--bad);
+        }
+
+        .mono {
+            font-family: "IBM Plex Mono", Consolas, monospace;
+        }
+
+        .chart-grid {
+            margin-top: 14px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px;
+        }
+
+        .chart-box {
+            border: 1px dashed #c7d2e0;
+            border-radius: 12px;
+            background: #fbfdff;
+            min-height: 140px;
+            padding: 12px;
+        }
+
+        .json {
+            margin-top: 14px;
+            padding: 10px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: #f8fafc;
+            max-height: 320px;
+            overflow: auto;
+            font-family: "IBM Plex Mono", Consolas, monospace;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+        }
+
+        @media (max-width: 760px) {
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <header class="topbar">
+            <div class="brand">
+                <strong>Nifty 100 Financial Intelligence</strong>
+                <span>Integrated ETL, analytics, web and partner API platform</span>
+            </div>
+            <nav class="topnav">
+                <a href="/">Home</a>
+                <a href="/companies/">Companies</a>
+                <a href="/compare/">Compare</a>
+                <a href="/screener/">Screener</a>
+                <a href="/admin-insights/">Admin Insights</a>
+                <a href="/api/docs/">API Docs</a>
+            </nav>
+        </header>
+
+        <main class="hero" data-page-key="{{ page_key }}">
+            <h1>{{ page_title }}</h1>
+            <p class="subtitle">Production scaffold connected to warehouse APIs. Use the controls below to fetch live records.</p>
+
+            {% if page_key == "home" %}
+            <section>
+                <div class="toolbar">
+                    <input id="homeSearch" type="text" placeholder="Search ticker or company" />
+                    <button id="loadHome">Load Home Data</button>
+                </div>
+                <div class="grid grid-3" id="homeCards" style="margin-top: 14px;"></div>
+                <div class="json" id="homeJson"></div>
+            </section>
+            {% endif %}
+
+            {% if page_key == "companies" %}
+            <section>
+                <div class="toolbar">
+                    <input id="companySearch" type="text" placeholder="Search symbol/company" />
+                    <input id="minScore" type="number" step="0.1" placeholder="Min Health Score" />
+                    <button id="loadCompanies">Load Companies</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Company</th>
+                                <th>Sector</th>
+                                <th>Score</th>
+                                <th>Label</th>
+                                <th>OPM%</th>
+                                <th>D/E</th>
+                                <th>3Y Growth</th>
+                            </tr>
+                        </thead>
+                        <tbody id="companiesBody"></tbody>
+                    </table>
+                </div>
+            </section>
+            {% endif %}
+
+            {% if page_key == "company-detail" and company_payload %}
+            <section>
+                <div class="grid grid-3" style="margin-top: 14px;">
+                    <article class="card">
+                        <div class="muted">Symbol</div>
+                        <div class="kpi mono">{{ company_payload.company.symbol }}</div>
+                    </article>
+                    <article class="card">
+                        <div class="muted">Company</div>
+                        <div class="kpi" style="font-size: 1.1rem;">{{ company_payload.company.company_name }}</div>
+                    </article>
+                    <article class="card">
+                        <div class="muted">Sector</div>
+                        <div class="kpi" style="font-size: 1.1rem;">{{ company_payload.company.sector }}</div>
+                    </article>
+                </div>
+                <div class="chart-grid" id="chartGrid">
+                    <div class="chart-box">Revenue and Profit Trend</div>
+                    <div class="chart-box">Balance Sheet Composition</div>
+                    <div class="chart-box">Cash Flow Waterfall</div>
+                    <div class="chart-box">EPS and Dividend</div>
+                    <div class="chart-box">Debt vs Equity</div>
+                    <div class="chart-box">CAGR Radar</div>
+                    <div class="chart-box">Margin Trend</div>
+                    <div class="chart-box">Health Score Gauge</div>
+                </div>
+                <div class="json" id="companyChartJson"></div>
+            </section>
+            {% endif %}
+
+            {% if page_key == "compare" %}
+            <section>
+                <div class="toolbar">
+                    <input id="compareSymbols" type="text" placeholder="Example: TCS,INFY,WIPRO" />
+                    <button id="loadCompare">Compare</button>
+                </div>
+                <div class="json" id="compareJson"></div>
+            </section>
+            {% endif %}
+
+            {% if page_key == "screener" %}
+            <section>
+                <div class="toolbar">
+                    <input id="screenSector" type="text" placeholder="Sector" />
+                    <input id="screenMinRoe" type="number" step="0.1" placeholder="Min ROE" />
+                    <input id="screenMaxDe" type="number" step="0.1" placeholder="Max D/E" />
+                    <input id="screenMinGrowth" type="number" step="0.1" placeholder="Min 3Y Sales Growth" />
+                    <input id="screenMinScore" type="number" step="0.1" placeholder="Min Health Score" />
+                    <button id="runScreener">Run Screener</button>
+                </div>
+                <div class="json" id="screenerJson"></div>
+            </section>
+            {% endif %}
+
+            {% if page_key == "sector-detail" and sector_payload %}
+            <section>
+                <div class="grid grid-3" style="margin-top: 14px;">
+                    <article class="card">
+                        <div class="muted">Companies</div>
+                        <div class="kpi">{{ sector_payload.companies|length }}</div>
+                    </article>
+                    <article class="card">
+                        <div class="muted">Avg OPM%</div>
+                        <div class="kpi">{{ sector_payload.average_metrics.avg_opm_pct }}</div>
+                    </article>
+                    <article class="card">
+                        <div class="muted">Avg D/E</div>
+                        <div class="kpi">{{ sector_payload.average_metrics.avg_debt_to_equity }}</div>
+                    </article>
+                </div>
+                <div class="json">{{ sector_payload|safe }}</div>
+            </section>
+            {% endif %}
+
+            {% if page_key|slice:":5" == "admin" %}
+            <section>
+                <div class="toolbar">
+                    <button id="loadAdminSummary">Load Admin Summary</button>
+                </div>
+                <div class="json" id="adminJson"></div>
+            </section>
+            {% endif %}
+        </main>
+    </div>
+
+    <script>
+        const pageKey = document.querySelector("main")?.dataset.pageKey || "";
+
+        function setJson(id, data) {
+            const node = document.getElementById(id);
+            if (node) {
+                node.textContent = JSON.stringify(data, null, 2);
+            }
+        }
+
+        if (pageKey === "home") {
+            document.getElementById("loadHome")?.addEventListener("click", async () => {
+                const res = await fetch("/api/v1/home/");
+                const data = await res.json();
+                setJson("homeJson", data);
+                const cards = document.getElementById("homeCards");
+                cards.innerHTML = (data.featured_companies || []).map((c) => `
+                    <article class="card">
+                        <div class="muted">${c.symbol}</div>
+                        <div style="font-weight:700;">${c.company_name || ""}</div>
+                        <div class="muted">${c.sector || ""}</div>
+                        <div style="margin-top:8px;" class="badge ${c.health_label || "AVERAGE"}">${c.health_label || "N/A"}</div>
+                    </article>
+                `).join("");
+            });
+            document.getElementById("loadHome")?.click();
+        }
+
+        if (pageKey === "companies") {
+            document.getElementById("loadCompanies")?.addEventListener("click", async () => {
+                const search = document.getElementById("companySearch").value.trim();
+                const minScore = document.getElementById("minScore").value.trim();
+                const params = new URLSearchParams({page: "1", page_size: "50", sort_by: "overall_score", sort_order: "desc"});
+                if (search) params.set("search", search);
+                if (minScore) params.set("min_health_score", minScore);
+                const res = await fetch(`/api/v1/companies/?${params.toString()}`);
+                const data = await res.json();
+                const tbody = document.getElementById("companiesBody");
+                tbody.innerHTML = (data.items || []).map((r) => `
+                    <tr>
+                        <td><a href="/company/${r.symbol}/">${r.symbol}</a></td>
+                        <td>${r.company_name || ""}</td>
+                        <td>${r.sector || ""}</td>
+                        <td>${r.overall_score ?? ""}</td>
+                        <td><span class="badge ${r.health_label || "AVERAGE"}">${r.health_label || "N/A"}</span></td>
+                        <td>${r.opm_pct ?? ""}</td>
+                        <td>${r.debt_to_equity ?? ""}</td>
+                        <td>${r.sales_growth_3y ?? ""}</td>
+                    </tr>
+                `).join("");
+            });
+            document.getElementById("loadCompanies")?.click();
+        }
+
+        if (pageKey === "company-detail") {
+            const symbol = "{{ symbol|default:'' }}";
+            if (symbol) {
+                fetch(`/api/v1/companies/${symbol}/charts/`)
+                    .then((r) => r.json())
+                    .then((data) => setJson("companyChartJson", data));
+            }
+        }
+
+        if (pageKey === "compare") {
+            document.getElementById("loadCompare")?.addEventListener("click", async () => {
+                const symbols = document.getElementById("compareSymbols").value.trim();
+                const res = await fetch(`/api/v1/compare/?symbols=${encodeURIComponent(symbols)}`);
+                const data = await res.json();
+                setJson("compareJson", data);
+            });
+        }
+
+        if (pageKey === "screener") {
+            document.getElementById("runScreener")?.addEventListener("click", async () => {
+                const params = new URLSearchParams();
+                [
+                    ["sector", "screenSector"],
+                    ["min_roe", "screenMinRoe"],
+                    ["max_de", "screenMaxDe"],
+                    ["min_sales_growth", "screenMinGrowth"],
+                    ["min_health_score", "screenMinScore"],
+                ].forEach(([key, id]) => {
+                    const value = document.getElementById(id).value.trim();
+                    if (value) params.set(key, value);
+                });
+                const res = await fetch(`/api/v1/screener/?${params.toString()}`);
+                const data = await res.json();
+                setJson("screenerJson", data);
+            });
+        }
+
+        if (pageKey.startsWith("admin")) {
+            document.getElementById("loadAdminSummary")?.addEventListener("click", async () => {
+                const res = await fetch("/api/v1/admin/summary/");
+                const data = await res.json();
+                setJson("adminJson", data);
+            });
+        }
+    </script>
+</body>
+</html>

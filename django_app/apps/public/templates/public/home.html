@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ page_title }}</title>
+    <style>
+        :root {
+            --bg: #f6f3eb;
+            --ink: #18222d;
+            --accent: #0f766e;
+            --muted: #41515f;
+            --card: #ffffff;
+        }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at top right, #d9f2e8 0%, var(--bg) 45%, #efe4d1 100%);
+            color: var(--ink);
+        }
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 32px 20px;
+        }
+        .hero {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 12px 30px rgba(24, 34, 45, 0.08);
+        }
+        h1 {
+            margin: 0;
+            font-size: 2rem;
+            letter-spacing: 0.02em;
+        }
+        p {
+            color: var(--muted);
+            line-height: 1.6;
+        }
+        .badge {
+            display: inline-block;
+            margin-top: 14px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(15, 118, 110, 0.12);
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <section class="hero">
+            <h1>{{ page_title }}</h1>
+            <p>
+                Django web scaffold is live. This page is part of the platform shell for Stream C.
+                API endpoints are available under /api/partner/v1/ and API docs under /api/docs/.
+            </p>
+            <span class="badge">Foundation Ready</span>
+        </section>
+    </main>
+</body>
+</html>
