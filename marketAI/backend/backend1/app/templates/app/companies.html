@@ -1,0 +1,170 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Nifty 100 Screener{% endblock %}
+
+{% block content %}
+
+<!-- FILTER BAR -->
+<div class="bg-white p-4 rounded shadow mb-4">
+
+    <form method="GET" class="flex flex-wrap gap-3">
+
+        <input type="text"
+               name="search"
+               value="{{ search }}"
+               placeholder="Search company..."
+               class="border p-2 rounded w-64">
+
+        <select name="sector" id="sectorSelect" class="border p-2 rounded">
+            <option value="">All Sectors</option>
+        </select>
+
+        <select name="sort" class="border p-2 rounded">
+            <option value="">Sort By</option>
+            <option value="health" {% if sort == "health" %}selected{% endif %}>Health Score</option>
+            <option value="revenue" {% if sort == "revenue" %}selected{% endif %}>Revenue</option>
+        </select>
+
+        <input type="number"
+               name="min_health"
+               value="{{ min_health }}"
+               placeholder="Min Health"
+               class="border p-2 rounded w-40">
+
+        <button class="bg-black text-white px-4 rounded">
+            Apply
+        </button>
+
+    </form>
+
+</div>
+
+<!-- TABLE -->
+<div class="bg-white rounded shadow overflow-hidden">
+
+    <div id="companiesError" class="hidden text-sm text-red-600 px-4 py-2 border-b">
+        Failed to load companies.
+    </div>
+
+    <table class="w-full text-left">
+
+        <thead class="bg-gray-100">
+            <tr>
+                <th class="p-3">Company</th>
+                <th class="p-3">Sector</th>
+                <th class="p-3">Revenue</th>
+                <th class="p-3">Profit</th>
+                <th class="p-3">Health</th>
+            </tr>
+        </thead>
+
+        <tbody id="companiesBody">
+            <tr class="animate-pulse">
+                <td class="p-3" colspan="5">
+                    <div class="h-4 bg-gray-100 rounded"></div>
+                </td>
+            </tr>
+            <tr class="animate-pulse">
+                <td class="p-3" colspan="5">
+                    <div class="h-4 bg-gray-100 rounded"></div>
+                </td>
+            </tr>
+            <tr class="animate-pulse">
+                <td class="p-3" colspan="5">
+                    <div class="h-4 bg-gray-100 rounded"></div>
+                </td>
+            </tr>
+        </tbody>
+
+    </table>
+
+</div>
+
+<script>
+const companiesBody = document.getElementById('companiesBody');
+const sectorSelect = document.getElementById('sectorSelect');
+const companiesError = document.getElementById('companiesError');
+
+const params = new URLSearchParams(window.location.search);
+const searchValue = params.get('search') || '';
+const sectorValue = params.get('sector') || '';
+const sortValue = params.get('sort') || '';
+const minHealthValue = params.get('min_health') || '';
+
+async function loadCompanies() {
+    try {
+        const response = await fetch('/api/companies/');
+        if (!response.ok) {
+            throw new Error('Failed to load companies');
+        }
+
+        const payload = await response.json();
+        const allCompanies = payload.results || [];
+
+        const sectors = Array.from(new Set(allCompanies.map(c => c.sector).filter(Boolean))).sort();
+        sectorSelect.innerHTML = '<option value="">All Sectors</option>' +
+            sectors.map(s => `<option value="${s}">${s}</option>`).join('');
+        if (sectorValue) {
+            sectorSelect.value = sectorValue;
+        }
+
+        let filtered = allCompanies;
+        if (searchValue) {
+            filtered = filtered.filter(c => c.name.toLowerCase().includes(searchValue.toLowerCase()));
+        }
+        if (sectorValue) {
+            filtered = filtered.filter(c => c.sector === sectorValue);
+        }
+        if (minHealthValue) {
+            const minHealth = parseFloat(minHealthValue);
+            if (!Number.isNaN(minHealth)) {
+                filtered = filtered.filter(c => parseFloat(c.health) >= minHealth);
+            }
+        }
+
+        if (sortValue === 'health') {
+            filtered = filtered.sort((a, b) => b.health - a.health);
+        } else if (sortValue === 'revenue') {
+            filtered = filtered.sort((a, b) => b.revenue - a.revenue);
+        }
+
+        if (!filtered.length) {
+            companiesBody.innerHTML = '<tr><td class="p-3 text-gray-500" colspan="5">No companies found.</td></tr>';
+            return;
+        }
+
+        companiesBody.innerHTML = filtered.map(c => {
+            let healthClass = 'bg-red-100 text-red-700';
+            if (c.health >= 85) {
+                healthClass = 'bg-green-100 text-green-700';
+            } else if (c.health >= 70) {
+                healthClass = 'bg-yellow-100 text-yellow-700';
+            }
+
+            return `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-3 font-bold">${c.name}</td>
+                    <td class="p-3">
+                        <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">${c.sector || ''}</span>
+                    </td>
+                    <td class="p-3">₹ ${Number(c.revenue).toLocaleString()}</td>
+                    <td class="p-3">₹ ${Number(c.profit).toLocaleString()}</td>
+                    <td class="p-3">
+                        <span class="${healthClass} px-2 py-1 rounded">${Number(c.health).toFixed(1)}</span>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (error) {
+        if (companiesError) {
+            companiesError.classList.remove('hidden');
+        }
+        companiesBody.innerHTML = '<tr><td class="p-3 text-gray-500" colspan="5">No data available.</td></tr>';
+        console.error(error);
+    }
+}
+
+loadCompanies();
+</script>
+
+{% endblock %}

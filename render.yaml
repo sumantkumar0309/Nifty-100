@@ -1,0 +1,64 @@
+databases:
+  - name: nifty100-postgres
+    databaseName: nifty100_warehouse
+    user: nifty100
+    plan: free
+
+services:
+  - type: redis
+    name: nifty100-redis
+    plan: free
+    ipAllowList: [] # Keep it strictly internal for security
+
+  - type: web
+    name: nifty100-django
+    env: docker
+    plan: free
+    rootDir: marketAI/backend
+    dockerfilePath: ./Dockerfile
+    # Render overrides CMD if dockerCommand is specified, but we can leave it to use the default in the Dockerfile
+    healthCheckPath: /health/
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nifty100-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: nifty100-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        value: redis://red-nifty100-redis:6379/1
+        # In Render, Redis connection strings point to db 0. Celery uses /1, so we manipulate it inside or rely on REDIS_URL. 
+        # But we can also set the main Redis connection for everything.
+      - key: DEBUG
+        value: "false"
+      - key: DJANGO_SETTINGS_MODULE
+        value: "backend1.settings" # Make sure this points to your actual settings if backend2 is incorrect 
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: "nifty100-django.onrender.com"
+
+  - type: worker
+    name: nifty100-celery
+    env: docker
+    plan: free
+    rootDir: marketAI/backend
+    dockerfilePath: ./Dockerfile
+    dockerCommand: celery -A backend2 worker --loglevel=info
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nifty100-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: nifty100-redis
+          type: redis
+          property: connectionString
+      - key: DEBUG
+        value: "false"
+      - key: DJANGO_SETTINGS_MODULE
+        value: "backend1.settings"

@@ -1,0 +1,44 @@
+year_id,year_label,fiscal_year,quarter,is_ttm,is_half_year,sort_order
+1,Sep 2011,2011.0,Q2,False,True,20112
+2,Mar 2011,2011.0,Q4,False,False,20114
+3,Dec 2012,2012.0,Q3,False,False,20123
+4,Mar 2012,2012.0,Q4,False,False,20124
+5,Jun 2013,2013.0,Q1,False,False,20131
+6,Dec 2013,2013.0,Q3,False,False,20133
+7,Mar 2013,2013.0,Q4,False,False,20134
+8,Jun 2014,2014.0,Q1,False,False,20141
+9,Sep 2014,2014.0,Q2,False,True,20142
+10,Dec 2014,2014.0,Q3,False,False,20143
+11,Mar 2014,2014.0,Q4,False,False,20144
+12,Jun 2015,2015.0,Q1,False,False,20151
+13,Sep 2015,2015.0,Q2,False,True,20152
+14,Dec 2015,2015.0,Q3,False,False,20153
+15,Mar 2015,2015.0,Q4,False,False,20154
+16,Sep 2016,2016.0,Q2,False,True,20162
+17,Dec 2016,2016.0,Q3,False,False,20163
+18,Mar 2016,2016.0,Q4,False,False,20164
+19,Sep 2017,2017.0,Q2,False,True,20172
+20,Dec 2017,2017.0,Q3,False,False,20173
+21,Mar 2017,2017.0,Q4,False,False,20174
+22,Sep 2018,2018.0,Q2,False,True,20182
+23,Dec 2018,2018.0,Q3,False,False,20183
+24,Mar 2018,2018.0,Q4,False,False,20184
+25,Sep 2019,2019.0,Q2,False,True,20192
+26,Dec 2019,2019.0,Q3,False,False,20193
+27,Mar 2019,2019.0,Q4,False,False,20194
+28,Sep 2020,2020.0,Q2,False,True,20202
+29,Dec 2020,2020.0,Q3,False,False,20203
+30,Mar 2020,2020.0,Q4,False,False,20204
+31,Sep 2021,2021.0,Q2,False,True,20212
+32,Dec 2021,2021.0,Q3,False,False,20213
+33,Mar 2021,2021.0,Q4,False,False,20214
+34,Sep 2022,2022.0,Q2,False,True,20222
+35,Dec 2022,2022.0,Q3,False,False,20223
+36,Mar 2022,2022.0,Q4,False,False,20224
+37,Sep 2023,2023.0,Q2,False,True,20232
+38,Dec 2023,2023.0,Q3,False,False,20233
+39,Mar 2023,2023.0,Q4,False,False,20234
+40,2024.5,2024.0,,False,False,20240
+41,Sep 2024,2024.0,Q2,False,True,20242
+42,Mar 2024,2024.0,Q4,False,False,20244
+43,TTM,,TTM,True,False,99999
