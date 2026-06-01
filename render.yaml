@@ -38,7 +38,7 @@ services:
         value: "backend1.settings" # Make sure this points to your actual settings if backend2 is incorrect 
       - key: DJANGO_SECRET_KEY
         generateValue: true
-      - key: ALLOWED_HOSTS
-        value: "nifty100-django.onrender.com"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: "nifty100-django.onrender.com,127.0.0.1,localhost"
 
 
