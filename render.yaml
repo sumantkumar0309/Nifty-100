@@ -41,24 +41,4 @@ services:
       - key: ALLOWED_HOSTS
         value: "nifty100-django.onrender.com"
 
-  - type: worker
-    name: nifty100-celery
-    env: docker
-    plan: free
-    rootDir: marketAI/backend
-    dockerfilePath: ./Dockerfile
-    dockerCommand: celery -A backend2 worker --loglevel=info
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: nifty100-postgres
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          name: nifty100-redis
-          type: redis
-          property: connectionString
-      - key: DEBUG
-        value: "false"
-      - key: DJANGO_SETTINGS_MODULE
-        value: "backend1.settings"
+
