@@ -19,15 +19,15 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p logs staticfiles media
 
-# Collect static files
-RUN python manage.py collectstatic --noinput || true
-
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONPATH=/app:/app/backend1
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health/ || exit 1
 
-CMD ["gunicorn", "backend2.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4"]
+# Change to backend1 directory and run gunicorn
+WORKDIR /app/backend1
+CMD ["gunicorn", "backend1.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4"]
